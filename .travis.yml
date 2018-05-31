@@ -1,0 +1,14 @@
+language: go
+go:
+- 1.10.x
+script:
+- CGO_ENABLED=0 GOOS=linux go build -o gtfol
+deploy:
+  provider: releases
+  api_key:
+    secure: JE+jLt4CoZ3j6RA1/wSq0GqRw5oL2aYAVF9l7V23RC6tR/r16bCFUzJdGKnpbUTsQ2cRXwkSPnbIyu+fTkG+PXDv78zoJ30EJYl2GJjJXs4urNuFy3HrBXcqAFYek1y+rOSlIUUvl3Hx7Nnu4H7hSet94z3cxj/ZakLcra88ctEtxgt1U7s0nGzXZHhTbjSlN98ZUs/lsl7qSsx250wuQFjI6sjfop8hlOGNAdM9kXJdPOUH7q+tm5szh7LMJ1WxggehhHZBEbUEfA6s6QCB4Oicb5AK8OWkqZ6/JMapTiuCUWaMRObxyXnbzrddnbU5SndugbnA2lL2uVhSK9qGjM1HBsAP3sCNzQMIBz67ULsQO5boLhuG6k94qvWg/4IpvW4yNglirMI+TVW/Wkvkc1FM0iqMIJvlgxWXx00CU3MluWXt1TDwrgR7+ntZRhi4hjqYYdWG5duRIEJurid2PPHwgI8oqD/jBvjlqTcxo7VIbTieY/2qyRsdfVjfuTy+BLnTOW1bluBYkC1vP1Ne7R4bOBR5DH3y9NI8Sh5Py1XoU92t8sKvcuEUbbetBQZhWSpSXPTU3DMRRhKoiAQPs1cRe1voPlWxZko6p6wdq5z0xwkVxwHRFHHmT2SQsi60gvibdavECdbo7QCwhaC0tOpWm6UtnU1ZzUqtrejETWA=
+  file: gtfol
+  skip_cleanup: true
+  on:
+    repo: AlexRudd/gtfol
+    tags: true

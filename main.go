@@ -73,7 +73,7 @@ func main() {
 }
 
 func reader(ctx context.Context, entries chan jdlog, cursors chan string, cursor *string) {
-	cmd := exec.Command("journalctl", "--output", "json-sse", "--follow", "--show-cursor")
+	cmd := exec.Command("journalctl", "--output", "json-sse", "--follow")
 	if cursor != nil {
 		cmd.Args = append(cmd.Args, "--cursor", *cursor)
 	}
@@ -91,17 +91,13 @@ func reader(ctx context.Context, entries chan jdlog, cursors chan string, cursor
 	for {
 		line := scanner.Bytes()
 
-		// -- cursor: s=0639...
-		if string(line[0:9]) == "-- cursor" {
-			cursors <- string(line[13:])
-		}
-
 		err = json.Unmarshal(line, &entry)
 		if err != nil {
 			log.Printf("failed unmarshal of log line: \"%s\"\n", line)
 			continue
 		}
 
+		cursors <- entry.Cursor
 		entries <- entry
 	}
 }
