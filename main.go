@@ -70,7 +70,7 @@ func main() {
 }
 
 func reader(ctx context.Context, entries chan jdEntry, cursors chan string, cursor *string) {
-	cmd := exec.Command(viper.GetString("journalctl"), "--output", "json", "--follow")
+	cmd := exec.Command(viper.GetString("journalctl"), "--output", "json-sse", "--follow")
 	if cursor != nil {
 		cmd.Args = append(cmd.Args, "--cursor", *cursor)
 	}
@@ -85,10 +85,10 @@ func reader(ctx context.Context, entries chan jdEntry, cursors chan string, curs
 	}
 
 	entry := jdEntry{}
-	for {
+	for scanner.Scan() {
 		line := scanner.Text()
 
-		err = json.Unmarshal([]byte(line), &entry)
+		err = json.Unmarshal([]byte(strings.Replace(line, "data:", "", 1)), &entry)
 		if err != nil {
 			log.Printf("failed unmarshal of log line: \"%s\"\n", line)
 			continue
