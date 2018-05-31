@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cdemers/journald2graylog/journald"
 	"github.com/spf13/viper"
 )
 
@@ -22,17 +21,15 @@ func init() {
 	viper.SetDefault("log-group", "gtfol")
 	viper.SetDefault("log-stream", fmt.Sprintf("%s-%s", "gtfol", time.Now().String()))
 	viper.SetDefault("cursor-file", "/gtfol/cursor")
+	viper.SetDefault("journalctl", "journalctl")
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.SetEnvPrefix("GTFOL")
 	viper.AutomaticEnv()
 }
 
-// jdlog is shorted than "journald.JournaldJSONLogEntry"
-type jdlog journald.JournaldJSONLogEntry
-
 // logBatch is many lines
-type logBatch []jdlog
+type logBatch []jdEntry
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -51,7 +48,7 @@ func main() {
 	}
 
 	cursors := make(chan string)
-	entries := make(chan jdlog)
+	entries := make(chan jdEntry)
 	batches := make(chan logBatch, 100)
 
 	go reader(ctx, entries, cursors, cursorStr)
@@ -72,8 +69,8 @@ func main() {
 	}
 }
 
-func reader(ctx context.Context, entries chan jdlog, cursors chan string, cursor *string) {
-	cmd := exec.Command("journalctl", "--output", "json-sse", "--follow")
+func reader(ctx context.Context, entries chan jdEntry, cursors chan string, cursor *string) {
+	cmd := exec.Command(viper.GetString("journalctl"), "--output", "json", "--follow")
 	if cursor != nil {
 		cmd.Args = append(cmd.Args, "--cursor", *cursor)
 	}
@@ -87,11 +84,11 @@ func reader(ctx context.Context, entries chan jdlog, cursors chan string, cursor
 		log.Fatalf("Could not run journalctl: %s", err.Error())
 	}
 
-	entry := jdlog{}
+	entry := jdEntry{}
 	for {
-		line := scanner.Bytes()
+		line := scanner.Text()
 
-		err = json.Unmarshal(line, &entry)
+		err = json.Unmarshal([]byte(line), &entry)
 		if err != nil {
 			log.Printf("failed unmarshal of log line: \"%s\"\n", line)
 			continue
@@ -114,7 +111,7 @@ func curser(ctx context.Context, cursors chan string, cf *os.File) {
 	}
 }
 
-func batcher(ctx context.Context, entries chan jdlog, batches chan logBatch) {
+func batcher(ctx context.Context, entries chan jdEntry, batches chan logBatch) {
 	batch := logBatch{}
 	ticker := time.NewTicker(10 * time.Second)
 	for {
